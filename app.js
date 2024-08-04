@@ -1,12 +1,12 @@
 const express = require('express');
 
+const morgan = require('morgan');
 const AppError = require('./appError');
 const globalErrorHandler = require('./controllers/errorController');
 const weatherRouter = require('./routes/weatherRoute');
 const userRouter = require('./routes/userRoute');
 
 const app = express();
-const morgan = require('morgan');
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));

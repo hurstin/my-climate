@@ -82,7 +82,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     token = req.headers.authorization.split(' ')[1];
   }
   if (!token) {
-    return next(new AppError('no access because of token', 401));
+    return next(new AppError('no access because of no token', 401));
   }
 
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);

@@ -21,6 +21,7 @@ mongoose.connect(
 );
 
 const app = require('./app');
+
 console.log(app.get('env'));
 
 const port = process.env.PORT;
