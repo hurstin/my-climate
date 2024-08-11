@@ -1,5 +1,14 @@
+const AppError = require('../appError');
 const User = require('../models/userModel');
 const catchAsync = require('./catchAsync');
+
+const filterObj = (obj, ...allowedFields) => {
+  const newObj = {};
+  Object.keys(obj).forEach((el) => {
+    if (allowedFields.includes(el)) newObj[el] = obj[el];
+  });
+  return newObj;
+};
 
 exports.getAllUser = catchAsync(async (req, res, next) => {
   const users = await User.find();
@@ -24,16 +33,23 @@ exports.oneUser = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.deleteUser = catchAsync(async (req, res, next) => {
-  await User.findByIdAndDelete(req.params.id);
+exports.deleteMe = catchAsync(async (req, res, next) => {
+  await User.findByIdAndDelete(req.user.id);
   res.status(204).json({
     status: 'success',
     data: null,
   });
 });
 
-exports.updateUser = catchAsync(async (req, res, next) => {
-  const currentUser = await User.findByIdAndUpdate(req.params.id, req.body, {
+exports.updateMe = catchAsync(async (req, res, next) => {
+  // create error if user post password data
+  if (req.body.password || req.body.passwordConfirm) {
+    return next(new AppError('this route is not for password change', 400));
+  }
+  // update user document
+  const filteredBody = filterObj(req.body, 'name', 'email');
+
+  const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
     new: true,
     runValidators: true,
   });
@@ -41,7 +57,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: {
-      user: currentUser,
+      user: updatedUser,
     },
   });
 });

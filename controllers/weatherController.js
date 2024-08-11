@@ -1,8 +1,9 @@
 // const { promisify } = require('util');
 // const User = require('../models/userModel');
+const geoip = require('geoip-lite');
 const Weather = require('../models/weatherModel');
 const catchAsync = require('./catchAsync');
-// const jwt = require('jsonwebtoken');
+const AppError = require('../appError');
 
 exports.getData = (req, res, next) => {
   console.log('we on track');
@@ -12,13 +13,26 @@ exports.getData = (req, res, next) => {
 };
 
 exports.getCurrentLocation = catchAsync(async (req, res, next) => {
+  const ip =
+    req.headers['cf-connecting-ip'] ||
+    req.headers['x-real-ip'] ||
+    req.headers['x-forwarded-for'] ||
+    req.socket.remoteAddress ||
+    '';
+
+  if (!ip) return next(new AppError('ip address not found, try again', 401));
+
+  const location = geoip.lookup(ip);
+  const [lat, lon] = location.ll;
+
   const weather = await fetch(
-    `https://api.openweathermap.org/data/2.5/weather?lat=53.120300&lon=-2.121158&appid=${process.env.WEATHER_KEY}`,
+    `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${process.env.WEATHER_KEY}`,
   );
+  // const weather = await fetch(
+  //   `https://api.openweathermap.org/data/2.5/weather?lat=53.120300&lon=-2.121158&appid=${process.env.WEATHER_KEY}`,
+  // );
   const response = await weather.json();
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
-
-  console.log(req.ip);
 
   const newWeather = await Weather.create({
     townName: response.name,
@@ -30,14 +44,4 @@ exports.getCurrentLocation = catchAsync(async (req, res, next) => {
     status: 'success',
     data: newWeather,
   });
-  next();
 });
-
-// const loc = navigator.geolocation.getCurrentPosition(function (position) {
-//   const latitude = position.coords.latitude;
-//   const longitude = position.coords.longitude;
-//   console.log(longitude, latitude);
-// });
-// console.log(loc);
-
-// console.log(navigator);
